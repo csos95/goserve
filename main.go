@@ -18,7 +18,7 @@ var (
 )
 
 func parseFlags() {
-	flag.IntVar(&port, "p", 8080, "port to use (tries random ports [8000,9000) if not avalable)")
+	flag.IntVar(&port, "p", 8080, "port to use (tries random ports [8000,9000) if in use)")
 	flag.IntVar(&maxTries, "m", 10, "max number of ports to try")
 	flag.StringVar(&directory, "d", ".", "directory to serve")
 	flag.Parse()
