@@ -1,7 +1,6 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -9,6 +8,8 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -18,10 +19,10 @@ var (
 )
 
 func parseFlags() {
-	flag.IntVar(&port, "p", 8080, "port to use (tries random ports [8000,9000) if in use)")
-	flag.IntVar(&maxTries, "m", 10, "max number of ports to try")
-	flag.StringVar(&directory, "d", ".", "directory to serve")
-	flag.Parse()
+	pflag.IntVarP(&port, "port", "p", 8080, "port to use (tries random ports [8000,9000) if in use)")
+	pflag.IntVarP(&maxTries, "maxTries", "m", 10, "max number of ports to try")
+	pflag.StringVarP(&directory, "directory", "d", ".", "directory to serve")
+	pflag.Parse()
 
 	// trim trailing '/' in path
 	directory = strings.TrimRight(directory, "/")
