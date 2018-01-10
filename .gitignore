@@ -1,2 +1,6 @@
+#binaries
 goserve
 goserve.exe
+
+#dependencies
+vendor/
