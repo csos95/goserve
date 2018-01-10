@@ -6,6 +6,8 @@ import (
 	"math/rand"
 	"net"
 	"net/http"
+	"os/exec"
+	"runtime"
 	"strings"
 	"time"
 
@@ -13,15 +15,17 @@ import (
 )
 
 var (
-	port      int
-	maxTries  int
-	directory string
+	port        int
+	maxTries    int
+	directory   string
+	openBrowser bool
 )
 
 func parseFlags() {
 	pflag.IntVarP(&port, "port", "p", 8080, "port to use (tries random ports [8000,9000) if in use)")
 	pflag.IntVarP(&maxTries, "maxTries", "m", 10, "max number of ports to try")
 	pflag.StringVarP(&directory, "directory", "d", ".", "directory to serve")
+	pflag.BoolVarP(&openBrowser, "openBrowser", "o", false, "open the default browser")
 	pflag.Parse()
 
 	// trim trailing '/' in path
@@ -51,6 +55,22 @@ func findOpenPort() error {
 	return nil
 }
 
+//openBrowser opens the default user browser with the specified url
+//taken from github.com/rodzzlessa24/openbrowser.go
+func openInBrowser(url string) bool {
+	var args []string
+	switch runtime.GOOS {
+	case "darwin":
+		args = []string{"open"}
+	case "windows":
+		args = []string{"cmd", "/c", "start"}
+	default:
+		args = []string{"xdg-open"}
+	}
+	cmd := exec.Command(args[0], append(args[1:], url)...)
+	return cmd.Start() == nil
+}
+
 func main() {
 	parseFlags()
 
@@ -59,6 +79,13 @@ func main() {
 		log.Fatal(err)
 	}
 	fmt.Printf("Serving %s on port %d\n", directory, port)
+
+	if openBrowser {
+		go func() {
+			time.Sleep(time.Second)
+			openInBrowser(fmt.Sprintf("http://0.0.0.0:%d", port))
+		}()
+	}
 
 	http.Handle("/", http.FileServer(http.Dir(directory)))
 	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), nil)
