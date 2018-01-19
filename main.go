@@ -79,24 +79,28 @@ func openInBrowser(url string) bool {
 	return cmd.Start() == nil
 }
 
+func excludedFile(path string) bool {
+	parts := strings.Split(path, "/")
+
+	for _, part := range parts {
+		for _, excludedFile := range excludedFiles {
+			if part == excludedFile {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	// remove / prefix
 	path := strings.TrimLeft(r.URL.Path, "/")
-	excluded := false
-
-	// check for matches to excluded files
-	for _, excludedFile := range excludedFiles {
-		if strings.Contains(path, excludedFile) && excludedFile != "" {
-			excluded = true
-		}
-	}
 
 	// return 403 if the file is excluded, serve it if it isn't
-	if excluded {
-		w.WriteHeader(http.StatusForbidden)
-		fmt.Fprint(w, http.StatusForbidden)
+	if excludedFile(path) {
+		fmt.Fprint(w, "403 forbidden")
 	} else {
-		http.ServeFile(w, r, path)
+		http.ServeFile(w, r, fmt.Sprintf("%s/%s", directory, path))
 	}
 }
 
