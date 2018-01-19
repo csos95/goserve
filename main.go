@@ -15,21 +15,27 @@ import (
 )
 
 var (
-	port        int
-	maxTries    int
-	directory   string
-	openBrowser bool
+	openBrowser   bool
+	maxTries      int
+	port          int
+	directory     string
+	exclude       string
+	excludedFiles []string
 )
 
 func parseFlags() {
-	pflag.IntVarP(&port, "port", "p", 8080, "port to use (tries random ports [8000,9000) if in use)")
-	pflag.IntVarP(&maxTries, "maxTries", "m", 10, "max number of ports to try")
-	pflag.StringVarP(&directory, "directory", "d", ".", "directory to serve")
 	pflag.BoolVarP(&openBrowser, "openBrowser", "o", false, "open the default browser")
+	pflag.IntVarP(&maxTries, "maxTries", "m", 10, "max number of ports to try")
+	pflag.IntVarP(&port, "port", "p", 8080, "port to use (tries random ports [8000,9000) if in use)")
+	pflag.StringVarP(&directory, "directory", "d", ".", "directory to serve")
+	pflag.StringVarP(&exclude, "exclude", "e", "", "comma separated list of files to exclude")
 	pflag.Parse()
 
 	// trim trailing '/' in path
 	directory = strings.TrimRight(directory, "/")
+	// split excluded files
+	excludedFiles = strings.Split(exclude, ",")
+	fmt.Printf("Excluding %v\n", excludedFiles)
 }
 
 func findOpenPort() error {
@@ -71,6 +77,27 @@ func openInBrowser(url string) bool {
 	return cmd.Start() == nil
 }
 
+func handler(w http.ResponseWriter, r *http.Request) {
+	log.Println(r.URL.Path)
+	path := strings.TrimLeft(r.URL.Path, "/")
+	log.Println(path)
+
+	excluded := false
+	for _, excludedFile := range excludedFiles {
+		if strings.Contains(path, excludedFile) && excludedFile != "" {
+			log.Printf("Matched excluded file '%s'", excludedFile)
+			excluded = true
+		}
+	}
+
+	if excluded {
+		w.WriteHeader(http.StatusForbidden)
+		fmt.Fprint(w, http.StatusForbidden)
+	} else {
+		http.ServeFile(w, r, path)
+	}
+}
+
 func main() {
 	parseFlags()
 
@@ -87,7 +114,7 @@ func main() {
 		}()
 	}
 
-	http.Handle("/", http.FileServer(http.Dir(directory)))
+	http.HandleFunc("/", handler)
 	err = http.ListenAndServe(fmt.Sprintf("0.0.0.0:%d", port), nil)
 	if err != nil {
 		log.Println(err)
