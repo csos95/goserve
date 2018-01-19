@@ -34,8 +34,10 @@ func parseFlags() {
 	// trim trailing '/' in path
 	directory = strings.TrimRight(directory, "/")
 	// split excluded files
-	excludedFiles = strings.Split(exclude, ",")
-	fmt.Printf("Excluding %v\n", excludedFiles)
+	if exclude != "" {
+		excludedFiles = strings.Split(exclude, ",")
+		fmt.Printf("Excluding %v\n", excludedFiles)
+	}
 }
 
 func findOpenPort() error {
@@ -78,18 +80,18 @@ func openInBrowser(url string) bool {
 }
 
 func handler(w http.ResponseWriter, r *http.Request) {
-	log.Println(r.URL.Path)
+	// remove / prefix
 	path := strings.TrimLeft(r.URL.Path, "/")
-	log.Println(path)
-
 	excluded := false
+
+	// check for matches to excluded files
 	for _, excludedFile := range excludedFiles {
 		if strings.Contains(path, excludedFile) && excludedFile != "" {
-			log.Printf("Matched excluded file '%s'", excludedFile)
 			excluded = true
 		}
 	}
 
+	// return 403 if the file is excluded, serve it if it isn't
 	if excluded {
 		w.WriteHeader(http.StatusForbidden)
 		fmt.Fprint(w, http.StatusForbidden)
