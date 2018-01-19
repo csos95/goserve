@@ -1,7 +1,7 @@
 # GoServe
 A very basic file server
 
-Install with `go install gitlab.csos95.com/csos95/goserve`
+Install with `go get -u gitlab.csos95.com/csos95/goserve`
 
 flag|description|default
 -|-|-
